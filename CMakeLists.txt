@@ -10,7 +10,7 @@ include_directories(.)
 include_directories(include)
 include_directories(src)
 aux_source_directory(src SRC)
-find_package(Threads REQUIRED)
+
 
 if("${PROJECT_ABI}" MATCHES "aarch64" OR
        "${PROJECT_ABI}" MATCHES "arm64")
