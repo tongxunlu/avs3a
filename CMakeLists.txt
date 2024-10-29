@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.1)
+
 set(LIBNAME avs3a)
 project(${LIBNAME} C)
 set(CMAKE_C_STANDARD 11)
