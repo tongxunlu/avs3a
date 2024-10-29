@@ -14,6 +14,7 @@ if("${PROJECT_ABI}" MATCHES "aarch64" OR
   add_definitions(-D _arm64)
 elseif("${PROJECT_ABI}" MATCHES "^arm")
   add_definitions(-D _armv7a)
+endif()
 
 set (CONFIG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/..)
 set(prefix "${CMAKE_INSTALL_PREFIX}")
@@ -34,6 +35,7 @@ if(CMAKE_USE_PTHREADS_INIT)
   file(APPEND "${pc_file}" "Libs: -L\${libdir} -l${LIBNAME} -lm -lpthread\n")
 else()
   file(APPEND "${pc_file}" "Libs: -L\${libdir} -l${LIBNAME} -lm\n")
+endif()
 file(APPEND "${pc_file}" "Cflags: -I\${includedir}\n")
 add_library(${LIBNAME}  ${SRC})
 
