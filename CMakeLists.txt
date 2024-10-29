@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 
-set(LIBNAME avs3a)
+set(LIBNAME avs3ad)
 project(${LIBNAME} C)
 set(CMAKE_C_STANDARD 11)
 include_directories(.)
