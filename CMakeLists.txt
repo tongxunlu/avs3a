@@ -38,7 +38,7 @@ if (NOT MSVC)
     target_link_libraries(${LIBNAME} m)
 endif()
 if(CMAKE_USE_PTHREADS_INIT)
-target_link_libraries(${LIBNAME} pthread)
+    target_link_libraries(${LIBNAME} pthread)
 endif()
 
 install(TARGETS av3ad LIBRARY DESTINATION ${CMAKE_INSTALL_LIB_DIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIB_DIR})
