@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 3.1)
 
 set(LIBNAME av3ad)
-project(${LIBNAME} C)
-set(CMAKE_C_STANDARD 11)
+project(${LIBNAME})
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 include_directories(.)
 include_directories(include)
 include_directories(src)
