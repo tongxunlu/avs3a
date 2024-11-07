@@ -14,10 +14,10 @@ aux_source_directory(./src SRC)
 if("${PROJECT_ABI}" MATCHES "aarch64" OR
         "${PROJECT_ABI}" MATCHES "arm64")
     add_definitions(-D _arm64)
-    list(APPEND ANDROID_COMPILER_FLAGS -fsigned-char)
+    add_definitions(-fsigned-char)
 elseif("${PROJECT_ABI}" MATCHES "^arm")
     add_definitions(-D _armv7a)
-    list(APPEND ANDROID_COMPILER_FLAGS -fsigned-char)
+    add_definitions(-fsigned-char)
 endif()
 
 set (CONFIG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/..)
