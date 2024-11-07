@@ -11,13 +11,10 @@ include_directories("include")
 include_directories("src")
 aux_source_directory(./src SRC)
 
-
-if("${PROJECT_ABI}" MATCHES "aarch64" OR
-       "${PROJECT_ABI}" MATCHES "arm64")
-  add_definitions(-D _arm64)
-elseif("${PROJECT_ABI}" MATCHES "^arm")
-  add_definitions(-D _armv7a)
-endif()
+list(APPEND ANDROID_COMPILER_FLAGS
+        -fsigned-char
+        -DARCH_AARCH64
+        -Wl,--no-undefined)
 
 set (CONFIG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/..)
 set(prefix "${CMAKE_INSTALL_PREFIX}")
