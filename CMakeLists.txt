@@ -16,6 +16,7 @@ if("${PROJECT_ABI}" MATCHES "aarch64" OR
     add_definitions(-DARCH_AARCH64)
 elseif("${PROJECT_ABI}" MATCHES "^arm")
     add_definitions(-DARCH_AARCH64)
+    add_definitions(-mfloat-abi=softfp -mfpu=vfp -marm)
 endif()
 
 add_definitions(-fsigned-char)
