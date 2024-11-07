@@ -13,10 +13,8 @@ aux_source_directory(./src SRC)
 
 if("${PROJECT_ABI}" MATCHES "aarch64" OR
         "${PROJECT_ABI}" MATCHES "arm64")
-    add_definitions(-D _arm64)
     add_definitions(-DARCH_AARCH64)
 elseif("${PROJECT_ABI}" MATCHES "^arm")
-    add_definitions(-D _armv7a)
     add_definitions(-DARCH_AARCH64)
 endif()
 
