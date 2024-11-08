@@ -18,6 +18,7 @@ elseif("${PROJECT_ABI}" MATCHES "^arm")
     add_definitions(-D _armv7a)
 endif()
 
+add_definitions(-lstdc++ -lm -ldl -llog)
 add_definitions(-fsigned-char)
 
 set (CONFIG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/..)
