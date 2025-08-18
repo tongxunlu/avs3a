@@ -1,11 +1,54 @@
-- name: 🧱 Build avs3a for Windows x86
-  run: |
-    mkdir -p build-avs3a
-    cd build-avs3a
-    cmake ../avs3a \
-      -DCMAKE_SYSTEM_NAME=Windows \
-      -DCMAKE_C_COMPILER=i686-w64-mingw32-gcc \
-      -DCMAKE_CXX_COMPILER=i686-w64-mingw32-g++ \
-      -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/external/avs3a \
-      -DCMAKE_BUILD_TYPE=Release
-    cmake --build . --target install --parallel
+name: Build and Release AV3AD
+
+on:
+  push:
+    tags:
+      - 'v1.0'  # 例如 v1.0、v2.1.3 等
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🧰 Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential pkg-config mingw-w64
+
+    - name: 🧱 Build avs3a for Windows x86
+      run: |
+        mkdir -p build-avs3a
+        cd build-avs3a
+        cmake https://github.com/tongxunlu/avs3a \
+          -DCMAKE_SYSTEM_NAME=Windows \
+          -DCMAKE_C_COMPILER=i686-w64-mingw32-gcc \
+          -DCMAKE_CXX_COMPILER=i686-w64-mingw32-g++ \
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install/avs3a \
+          -DCMAKE_BUILD_TYPE=Release
+        cmake --build . --target install --parallel
+
+    - name: 📁 Package avs3a library
+      run: |
+        mkdir -p package/avs3a
+        cp -r install/avs3a/lib package/avs3a/
+        cp -r install/avs3a/include package/avs3a/
+        tar -czvf avs3a-win32-${{ github.ref_name }}.tar.gz -C package/avs3a .
+
+    - name: ☁️ Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: avs3a-win32-${{ github.ref_name }}
+        path: avs3a-win32-${{ github.ref_name }}.tar.gz
+
+    - name: 🚀 Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release ${{ github.ref_name }}
+        tag_name: ${{ github.ref_name }}
+        files: avs3a-win32-${{ github.ref_name }}.tar.gz
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
