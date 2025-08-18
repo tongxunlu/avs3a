@@ -1,0 +1,11 @@
+- name: 🧱 Build avs3a for Windows x86
+  run: |
+    mkdir -p build-avs3a
+    cd build-avs3a
+    cmake ../avs3a \
+      -DCMAKE_SYSTEM_NAME=Windows \
+      -DCMAKE_C_COMPILER=i686-w64-mingw32-gcc \
+      -DCMAKE_CXX_COMPILER=i686-w64-mingw32-g++ \
+      -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/external/avs3a \
+      -DCMAKE_BUILD_TYPE=Release
+    cmake --build . --target install --parallel
