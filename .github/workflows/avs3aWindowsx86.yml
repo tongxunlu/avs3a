@@ -1,10 +1,14 @@
-name: 编译av3a Build and Release AV3AD (Windows)
+name: 编译av3a-Build and Release AV3AD (Windows)
 
 on:
   push:
     tags:
-      - 'v*'
+      - 'v[0-9]+.[0-9]+'  # 匹配 v1.0, v1.1 等版本标签
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. v1.0)'
+        required: true
 
 jobs:
   build-windows:
@@ -15,6 +19,18 @@ jobs:
     steps:
     - name: 📥 Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 获取完整git历史
+
+    - name: 🏷️ Extract version tag
+      id: version
+      shell: bash
+      run: |
+        if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+          echo "::set-output name=version::${{ github.event.inputs.version }}"
+        else
+          echo "::set-output name=version::${{ github.ref_name }}"
+        fi
 
     - name: 🧰 Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
@@ -26,78 +42,37 @@ jobs:
       run: |
         cmake -S . -B build -G "Visual Studio 17 2022" -A x64 ^
               -DCMAKE_INSTALL_PREFIX=install ^
-              -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
-              -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=build_output ^
-              -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=build_output
-
-    - name: 🔍 Pre-build directory scan
-      shell: cmd
-      run: tree /f /a .
+              -DCMAKE_BUILD_TYPE=%BUILD_TYPE%
 
     - name: 🔨 Build project
       shell: cmd
-      run: |
-        cmake --build build --config %BUILD_TYPE% -- /m /v:diag
-        echo "=== BUILD ARTIFACTS ==="
-        dir /s build || echo "No build directory found"
+      run: cmake --build build --config %BUILD_TYPE% -- /m
 
-    - name: 🕵️ Locate built libraries
+    - name: 📦 Install artifacts
       shell: cmd
       run: |
-        echo "=== LIBRARY SEARCH ==="
-        where /r build *.lib || echo "No .lib files found"
-        where /r build *.dll || echo "No .dll files found"
-        echo "=== BUILD OUTPUT STRUCTURE ==="
-        tree /f build || echo "Tree command failed"
-
-    - name: 🛠️ Install artifacts
-      shell: cmd
-      run: |
-        mkdir -p install/lib
-        mkdir -p install/include
-        
-        # 多重来源查找库文件
-        if exist "build\build_output\*.lib" (
-            copy "build\build_output\*.lib" "install\lib\"
-        ) else if exist "build\%BUILD_TYPE%\*.lib" (
-            copy "build\%BUILD_TYPE%\*.lib" "install\lib\"
-        ) else if exist "build\lib\%BUILD_TYPE%\*.lib" (
-            copy "build\lib\%BUILD_TYPE%\*.lib" "install\lib\"
-        ) else (
-            echo "WARNING: No library files found to copy"
-        )
-
-        # 标准CMake安装
         cmake --install build --config %BUILD_TYPE%
+        dir /s install
 
-        echo "=== INSTALLED FILES ==="
-        tree /f install || dir /s install
-
-    - name: 📦 Package artifacts
+    - name: 📁 Package release
       shell: cmd
       run: |
         mkdir package
-        robocopy "install\include" "package\include" /E
-        robocopy "install\lib" "package\lib" /E
-        
-        echo "=== PACKAGE CONTENTS ==="
-        tree /f package
-        
-        7z a -tzip av3ad-${{ github.ref_name }}-win64.zip .\package\*
+        robocopy install\include package\include /E
+        robocopy install\lib package\lib /E
+        7z a -tzip av3ad-${{ steps.version.outputs.version }}-win64.zip .\package\*
 
     - name: ☁️ Upload artifact
-      if: success()
       uses: actions/upload-artifact@v4
       with:
-        name: av3ad-${{ github.ref_name }}-win64
-        path: av3ad-${{ github.ref_name }}-win64.zip
+        name: av3ad-${{ steps.version.outputs.version }}-win64
+        path: av3ad-${{ steps.version.outputs.version }}-win64.zip
 
-    - name: 🚀 Create Release
-      if: success()
+    - name: 🚀 Create Versioned Release
       uses: softprops/action-gh-release@v1
       with:
-        name: AV3AD ${{ github.ref_name }} (Windows)
-        tag_name: ${{ github.ref_name }}
-        files: av3ad-${{ github.ref_name }}-win64.zip
+        name: AV3AD ${{ steps.version.outputs.version }}
+        tag_name: ${{ steps.version.outputs.version }}
+        files: av3ad-${{ steps.version.outputs.version }}-win64.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
