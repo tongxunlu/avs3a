@@ -3,7 +3,7 @@ name: Build and Release AV3AD (Windows)
 on:
   push:
     tags:
-      - 'v1.2'
+      - 'v1.22'
   workflow_dispatch:
 
 jobs:
@@ -27,32 +27,37 @@ jobs:
         cmake -S . -B build -G "Visual Studio 17 2022" -A x64 ^
               -DCMAKE_INSTALL_PREFIX=install ^
               -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
-              -DBUILD_SHARED_LIBS=ON  # 关键修改：确保生成DLL
+              -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=lib
 
     - name: 🔨 Build project
       shell: cmd
-      run: cmake --build build --config %BUILD_TYPE% -- /m
+      run: |
+        cmake --build build --config %BUILD_TYPE% -- /m
+        dir /s build  # 调试：显示构建目录结构
 
-    - name: 📦 Install to staging directory
-      shell: cmd
-      run: cmake --install build --config %BUILD_TYPE%
-
-    - name: 🔍 Verify installed files
+    - name: 🛠️ Manual install libraries
       shell: cmd
       run: |
-        dir /s install
-        if not exist "install\lib\*.lib" ( echo "No library files found!" && exit 1 )
-        if not exist "install\bin\*.dll" ( echo "No DLL files found - but continuing anyway" )
-        if not exist "install\include\*.h" ( echo "No header files found!" && exit 1 )
+        mkdir install\lib
+        if exist "build\lib\%BUILD_TYPE%\*.lib" (
+          copy "build\lib\%BUILD_TYPE%\*.lib" "install\lib\"
+        ) else if exist "build\%BUILD_TYPE%\*.lib" (
+          copy "build\%BUILD_TYPE%\*.lib" "install\lib\"
+        )
+        dir /s install  # 验证安装内容
+
+    - name: 📦 Run CMake install
+      shell: cmd
+      run: |
+        cmake --install build --config %BUILD_TYPE%
+        dir /s install  # 再次验证
 
     - name: 📁 Package library
       shell: cmd
       run: |
         mkdir package
-        if exist "install\lib" ( xcopy "install\lib" "package\lib\" /E /I /Y )
-        if exist "install\include" ( xcopy "install\include" "package\include\" /E /I /Y )
-        if exist "install\bin" ( xcopy "install\bin" "package\bin\" /E /I /Y )
-        dir /s package
+        xcopy "install\include" "package\include\" /E /I /Y
+        xcopy "install\lib" "package\lib\" /E /I /Y
         7z a -tzip av3ad-${{ github.ref_name }}-win64.zip .\package\*
 
     - name: ☁️ Upload artifact
@@ -62,6 +67,7 @@ jobs:
         path: av3ad-${{ github.ref_name }}-win64.zip
 
     - name: 🚀 Create GitHub Release
+      if: success()
       uses: softprops/action-gh-release@v1
       with:
         name: Release ${{ github.ref_name }} (Windows)
