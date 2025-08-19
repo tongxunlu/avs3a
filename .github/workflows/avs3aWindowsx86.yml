@@ -48,9 +48,14 @@ jobs:
       shell: cmd
       run: |
         mkdir package
-        if exist "install\lib" ( xcopy "install\lib" "package\lib\" /E /I /Y )
-        if exist "install\include" ( xcopy "install\include" "package\include\" /E /I /Y )
-        if exist "install\bin" ( xcopy "install\bin" "package\bin\" /E /I /Y )
+        mkdir package\lib
+        mkdir package\include
+        mkdir package\bin
+        
+        robocopy "install\lib" "package\lib" /E /NFL /NDL /NJH /NJS /nc /ns /np
+        robocopy "install\include" "package\include" /E /NFL /NDL /NJH /NJS /nc /ns /np
+        robocopy "install\bin" "package\bin" /E /NFL /NDL /NJH /NJS /nc /ns /np
+        
         dir /s package
         7z a -tzip av3ad-${{ github.ref_name }}-win64.zip .\package\*
 
