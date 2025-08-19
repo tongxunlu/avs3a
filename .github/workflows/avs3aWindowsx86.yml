@@ -1,82 +1,57 @@
-name: Build and Release AVS3A (Windows x86/x64)
+name: Build and Release AV3AD (Windows)
 
 on:
   push:
     tags:
-      - 'v1.3'
+      - 'v1.2'  # 匹配所有 v 开头的标签
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        arch:
-          - x86
-          # - x64  # 📝 暂时注释掉 Windows x64 构建
+  build-windows:
+    runs-on: windows-latest
+    env:
+      BUILD_TYPE: Release
 
     steps:
-    - name: 📥 Checkout workflow repo
+    - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🧰 Install cross-compilation dependencies
+    - name: 🧰 Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: 🏗️ Configure CMake
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          cmake build-essential pkg-config \
-          mingw-w64
+        cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
+              -DCMAKE_INSTALL_PREFIX=install `
+              -DCMAKE_BUILD_TYPE=%BUILD_TYPE%
 
-    - name: 📥 Clone avs3a source
-      run: git clone https://github.com/tongxunlu/avs3a.git external/avs3a
+    - name: 🔨 Build project
+      run: cmake --build build --config %BUILD_TYPE% --parallel
 
-    - name: 🏗️ Configure CMake for ${{ matrix.arch }}
+    - name: 📦 Install to staging directory
+      run: cmake --install build --config %BUILD_TYPE%
+
+    - name: 📁 Package library
       run: |
-        mkdir -p build-avs3a
-        cd build-avs3a
-
-        if [ "${{ matrix.arch }}" = "x86" ]; then
-          export CC=i686-w64-mingw32-gcc
-          export CXX=i686-w64-mingw32-g++
-          export TARGET=win32
-        # elif [ "${{ matrix.arch }}" = "x64" ]; then
-        #   export CC=x86_64-w64-mingw32-gcc
-        #   export CXX=x86_64-w64-mingw32-g++
-        #   export TARGET=win64
-        fi
-
-        cmake ../external/avs3a \
-          -DCMAKE_SYSTEM_NAME=Windows \
-          -DCMAKE_C_COMPILER=$CC \
-          -DCMAKE_CXX_COMPILER=$CXX \
-          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install/avs3a \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_SHARED_LIBS=OFF
-
-    - name: 🔨 Build and Install
-      run: |
-        cd build-avs3a
-        cmake --build . --target install --parallel
-
-    - name: 📦 Package static library
-      run: |
-        mkdir -p package
-        cp -r install/avs3a/lib package/
-        cp -r install/avs3a/include package/
-        tar -czvf avs3a-${{ github.ref_name }}-${TARGET}.tar.gz -C package .
+        mkdir package
+        cp -r install/lib package/
+        cp -r install/include package/
+        cp -r install/bin package/  # 对于 Windows 需要包含 DLL 文件
+        7z a -tzip av3ad-${{ github.ref_name }}-win64.zip .\package\*
 
     - name: ☁️ Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: avs3a-${{ github.ref_name }}-${{ matrix.arch }}
-        path: avs3a-${{ github.ref_name }}-${{ matrix.arch == 'x86' && 'win32' }}.tar.gz
+        name: av3ad-${{ github.ref_name }}-win64
+        path: av3ad-${{ github.ref_name }}-win64.zip
 
     - name: 🚀 Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         name: Release ${{ github.ref_name }} (Windows)
         tag_name: ${{ github.ref_name }}
-        files: |
-          avs3a-${{ github.ref_name }}-win32.tar.gz
-          # avs3a-${{ github.ref_name }}-win64.tar.gz  # 📝 暂时注释掉 x64 发布
+        files: av3ad-${{ github.ref_name }}-win64.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
