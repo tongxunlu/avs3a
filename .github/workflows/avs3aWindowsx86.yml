@@ -36,13 +36,22 @@ jobs:
       shell: cmd
       run: cmake --install build --config %BUILD_TYPE%
 
+    - name: 🔍 Verify installed files
+      shell: cmd
+      run: |
+        dir /s install
+        if not exist "install\lib\*.lib" ( echo "No library files found!" && exit 1 )
+        if not exist "install\bin\*.dll" ( echo "No DLL files found!" && exit 1 )
+        if not exist "install\include\*.h" ( echo "No header files found!" && exit 1 )
+
     - name: 📁 Package library
       shell: cmd
       run: |
         mkdir package
-        xcopy /s /e /q install\lib package\lib
-        xcopy /s /e /q install\include package\include
-        xcopy /s /e /q install\bin package\bin
+        if exist "install\lib" ( xcopy "install\lib" "package\lib\" /E /I /Y )
+        if exist "install\include" ( xcopy "install\include" "package\include\" /E /I /Y )
+        if exist "install\bin" ( xcopy "install\bin" "package\bin\" /E /I /Y )
+        dir /s package
         7z a -tzip av3ad-${{ github.ref_name }}-win64.zip .\package\*
 
     - name: ☁️ Upload artifact
